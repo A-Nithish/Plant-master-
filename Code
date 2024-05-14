@@ -1,0 +1,82 @@
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+@Entity
+public class Plant {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String plantName;
+    private String address;
+    private String contactNo;
+
+}
+
+
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PlantRepository extends JpaRepository<Plant, Long> {
+}
+
+
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@Controller
+@RequestMapping("/plants")
+public class PlantController {
+    @Autowired
+    private PlantRepository plantRepository;
+
+    @GetMapping("/list")
+    public String listPlants(Model model) {
+        List<Plant> plants = plantRepository.findAll();
+        model.addAttribute("plants", plants);
+        return "plant-list";
+    }
+
+    @GetMapping("/add")
+    public String showAddForm(Model model) {
+        model.addAttribute("plant", new Plant());
+        return "add-plant";
+    }
+
+    @PostMapping("/save")
+    public String savePlant(@ModelAttribute("plant") Plant plant) {
+        plantRepository.save(plant);
+        return "redirect:/plants/list";
+    }
+
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Plant plant = plantRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid plant id: " + id));
+        model.addAttribute("plant", plant);
+        return "edit-plant";
+    }
+
+    @PostMapping("/update/{id}")
+    public String updatePlant(@PathVariable Long id, @ModelAttribute("plant") Plant updatedPlant) {
+        Plant existingPlant = plantRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid plant id: " + id));
+        existingPlant.setPlantName(updatedPlant.getPlantName());
+        existingPlant.setAddress(updatedPlant.getAddress());
+        existingPlant.setContactNo(updatedPlant.getContactNo());
+        plantRepository.save(existingPlant);
+        return "redirect:/plants/list";
+    }
+
+    @GetMapping("/delete/{id}")
+    public String deletePlant(@PathVariable Long id) {
+        plantRepository.deleteById(id);
+        return "redirect:/plants/list";
+    }
+}
